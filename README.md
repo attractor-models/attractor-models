@@ -1,19 +1,32 @@
-# Attractor Models
+<div align="center">
 
+# Solve the Loop: Attractor Models for Language and Reasoning
 
-## About
+**Jacob Fein-Ashley &nbsp;&middot;&nbsp; Paria Rashidinejad**
 
-Attractor models augment a standard transformer backbone with a weight-tied fixed-point refinement head. A conventional transformer encodes the input into contextual features; a single weight-tied block is then iterated to a fixed point via Anderson acceleration, with the backbone context injected at every step. Gradients flow back through the implicit function theorem, keeping training memory constant in the number of solver iterations.
+University of Southern California
 
-This codebase also includes experiments on Tiny recursive model experiments
+[![Project Page](https://img.shields.io/badge/Project-Page-blue?style=for-the-badge&logo=github)](https://attractor-models.github.io)
+[![Paper](https://img.shields.io/badge/Paper-Coming%20Soon-lightgrey?style=for-the-badge&logo=arxiv)](https://attractor-models.github.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## Acknowledgments
+[![Attractor-140M](https://img.shields.io/badge/%F0%9F%A4%97-Attractor--140M-yellow?style=flat-square)](https://huggingface.co/jacobfa1/attractor-140m)
+[![Attractor-370M](https://img.shields.io/badge/%F0%9F%A4%97-Attractor--370M-yellow?style=flat-square)](https://huggingface.co/jacobfa1/attractor-370m)
+[![Attractor-770M](https://img.shields.io/badge/%F0%9F%A4%97-Attractor--770M-yellow?style=flat-square)](https://huggingface.co/jacobfa1/attractor-770m)
 
-This codebase builds on:
+</div>
 
-- [Parcae](https://github.com/sandyresearch/parcae) — Parcae
-- [TinyRecursiveModels](https://github.com/SamsungSAILMontreal/TinyRecursiveModels) — TRM
+---
 
+Attractor Models augment a standard Transformer backbone with a weight-tied fixed-point refinement head. The backbone proposes an initial output embedding; a smaller recurrent block then iterates it to a fixed point via Anderson acceleration, with the backbone context injected at every step. Gradients flow through the implicit function theorem, keeping **training memory constant** regardless of solver iterations.
+
+### Key Results
+
+| | |
+|---|---|
+| **46.6%** perplexity improvement over Transformers | **91.4%** Sudoku-Extreme accuracy (27M params) |
+| **770M** Attractor &gt; **1.3B** Transformer (2&times; tokens) | **93.1%** Maze-Hard accuracy (27M params) |
+| **25&ndash;31%** less training FLOPs vs. looped baselines | Frontier models (Claude, GPT o3, R1) score **0%** |
 
 ## Installation
 
@@ -23,14 +36,6 @@ Requires Python 3.11+ and PyTorch 2.4+. Install PyTorch first following [pytorch
 pip install -e .
 ```
 
-## Pretrained Models
-
-| Model | Parameters | HuggingFace |
-|-------|-----------|-------------|
-| Attractor-140M | 140M | [jacobfa1/attractor-140m](https://huggingface.co/jacobfa1/attractor-140m) |
-| Attractor-370M | 370M | [jacobfa1/attractor-370m](https://huggingface.co/jacobfa1/attractor-370m) |
-| Attractor-770M | 770M | [jacobfa1/attractor-770m](https://huggingface.co/jacobfa1/attractor-770m) |
-
 ## Quick Start
 
 ```python
@@ -39,6 +44,14 @@ from attractor.models.attractor import Attractor, AttractorConfig
 config = AttractorConfig.from_name("attractor-small-140m")
 model = config.construct_model()
 ```
+
+## Pretrained Models
+
+| Model | Parameters | HuggingFace |
+|-------|-----------|-------------|
+| Attractor-140M | 140M | [jacobfa1/attractor-140m](https://huggingface.co/jacobfa1/attractor-140m) |
+| Attractor-370M | 370M | [jacobfa1/attractor-370m](https://huggingface.co/jacobfa1/attractor-370m) |
+| Attractor-770M | 770M | [jacobfa1/attractor-770m](https://huggingface.co/jacobfa1/attractor-770m) |
 
 ## Training
 
@@ -52,14 +65,10 @@ Training is configured via YAML files in `launch_configs/`.
 | `attractor-medium-370m.yaml` | Attractor | 370M |
 | `attractor-large-770m.yaml` | Attractor | 770M |
 | `attractor-xlarge-1_3b.yaml` | Attractor | 1.3B |
-| `parcae-small-140m.yaml` | Parcae | 140M |
-| `parcae-medium-370m.yaml` | Parcae | 370M |
-| `parcae-large-770m.yaml` | Parcae | 770M |
-| `parcae-xlarge-1_3bm.yaml` | Parcae | 1.3B |
-| `gpt-small-140m.yaml` | GPT | 140M |
-| `gpt-medium-370m.yaml` | GPT | 370M |
-| `gpt-medium-770m.yaml` | GPT | 770M |
-| `gpt-medium-1_3b.yaml` | GPT | 1.3B |
+| `parcae-small-140m.yaml` | Parcae (baseline) | 140M |
+| `parcae-medium-370m.yaml` | Parcae (baseline) | 370M |
+| `gpt-small-140m.yaml` | GPT (baseline) | 140M |
+| `gpt-medium-370m.yaml` | GPT (baseline) | 370M |
 
 Launch with:
 
@@ -67,15 +76,7 @@ Launch with:
 bash runs/run_training.sh launch_configs/attractor-small-140m.yaml attractor-small 2
 ```
 
-### ARC-AGI Puzzles
-
-The TRM-DEQ experiment in `experiments/attractor_puzzles/` 
-
-```bash
-bash experiments/attractor_puzzles/launch_arc_deq.sh
-```
-
-### Sudoku
+### Sudoku & Maze Reasoning
 
 ```bash
 torchrun --standalone --nproc_per_node=2 \
@@ -84,7 +85,13 @@ torchrun --standalone --nproc_per_node=2 \
     --out_dir /path/to/output
 ```
 
-## Eval
+### ARC-AGI Puzzles
+
+```bash
+bash experiments/attractor_puzzles/launch_arc_deq.sh
+```
+
+## Evaluation
 
 ```bash
 python scripts/eval.py --out_dir /path/to/checkpoint --eval_tasks core
@@ -98,13 +105,25 @@ attractor/
     attractor/    # Attractor model (fixed-point head + IFT backward)
     parcae/       # Parcae looped model (baseline)
     gpt/          # Standard transformer (baseline)
-  configs/
-    attractor/    # Attractor model configs (140M - 1.3B)
-    parcae/       # Parcae model configs
-    gpt/          # GPT model configs
+  configs/        # Model configs (140M – 1.3B)
 experiments/
-  attractor_puzzles/   # ARC-AGI and Sudoku with TRM-DEQ
-recpre/               # Training infrastructure (dataloading, optimizer, monitoring)
+  attractor_puzzles/   # Sudoku, Maze, ARC-AGI with TRM-DEQ
+recpre/               # Training infrastructure
 receval/              # Evaluation infrastructure
 scripts/              # Training, eval, generation entry points
 ```
+
+## Citation
+
+```bibtex
+@article{feinashley2026attractor,
+  title={Solve the Loop: Attractor Models for Language and Reasoning},
+  author={Fein-Ashley, Jacob and Rashidinejad, Paria},
+  year={2026},
+  url={https://attractor-models.github.io}
+}
+```
+
+## Acknowledgments
+
+This codebase builds on [Parcae](https://github.com/sandyresearch/parcae) and [TinyRecursiveModels](https://github.com/SamsungSAILMontreal/TinyRecursiveModels). This work was supported in part by a grant from Coefficient Giving.
